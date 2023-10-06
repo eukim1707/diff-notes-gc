@@ -12,7 +12,7 @@
 1. global VSCode search and replace done to change AWS Region to us-gov-west-1
    1. search: "arn:aws" | replace: "arn:aws-us-gov-west-1"
    2. change region to “us-gov-west-1” in terraform-infrastructure/terraform.tf and terraform-infrastructure/variables.tf
-2. profile_onboarding_old.yaml appeared to be used in init.yaml, but unsure if that is still relevant moving forward (ask Kiel)
+2. [profile_onboarding_old.yaml](ansible/profile_onboarding_old.yaml) replaced profile_onboarding.yaml in init.yaml
 3. venv folder added to AICOE-Platform-Infrastructure root dir
 4. "url: https://github.com/Deloitte/aicoe-tap-gitops.git" changed from "../AICOE-Platform-Gitops.git" in ansible/templates/argocd_token.yaml and ansible/argocd.yaml files
 
@@ -24,9 +24,9 @@
    - [parameters.tfvars](terraform-infrastructure/parameters.tfvars)
 3. DIFFERENCES: the only file with really major changes present in this repo is [cni.yaml](ansible/files/cni.yaml) (notes in the file are included with ##$ tag)
 4. NEW FILES:
-    - [centraldashboard-data.yaml](ansible/templates/centraldashboard-data.yaml) 
-    - [dexistio-data.yaml](ansible/templates/dexistio-data.yaml) 
-    - [oidcauthservice-data.yaml](ansible/templates/oidcauthservice-data.yaml)
+    - [ansible/templates/centraldashboard-data.yaml](ansible/templates/centraldashboard-data.yaml) 
+    - [ansible/templates/dexistio-data.yaml](ansible/templates/dexistio-data.yaml) 
+    - [ansible/templates/oidcauthservice-data.yaml](ansible/templates/oidcauthservice-data.yaml)
     - [ansible/create_collaborators.yaml](ansible/create_collaborators.yaml) 
     - [ansible/create_profile_policy_role.yaml](ansible/create_profile_policy_role.yaml) 
     - [ansible/create_profiles.yaml](ansible/create_profiles.yaml) 
