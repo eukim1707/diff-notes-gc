@@ -1,0 +1,13 @@
+apiVersion: kubeflow.org/v1beta1
+kind: Profile
+metadata:
+  name: "{{ team_name }}"
+spec:
+  owner:
+    kind: User
+    name: "{{ lead_email }}"
+  plugins:
+    - kind: AwsIamForServiceAccount
+      spec:
+        awsIamRole: "arn:aws-us-gov:iam::345088699538:role/dev2-eks-cluster-o-o-role" #{{ s3_role_profile_arn }}"
+##$ HARDCODED awsIamRole value

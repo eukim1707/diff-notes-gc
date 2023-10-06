@@ -1,0 +1,58 @@
+---
+
+- debug:
+    var: team_name
+
+- name: set fact for item (user email)
+  set_fact:
+    user_email: "{{ item }}"
+
+- debug:
+    var: user_email
+
+- name: set fact for username
+  set_fact:
+    user_name: "{{ user_email | split('@') | first }}"
+
+- debug:
+    var: user_name
+
+- name: copy templated authorization policy yaml file to bastion 
+  template:
+    src: usr-authpolicy.yaml
+    dest: "/home/{{ username }}/src/profiles/authpolicy_{{ team_name }}_{{ user_name }}.yaml"
+
+- name: copy templated rolebinding yaml file to bastion 
+  template:
+    src: usr-rolebinding.yaml
+    dest: "/home/{{ username }}/src/profiles/rolebinding_{{ team_name }}_{{ user_name }}.yaml"
+
+- name: make sure profile namespace is available
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s_info:
+    kind: Namespace
+    name: "{{ team_name }}"
+    wait: yes
+    wait_sleep: 5
+    wait_timeout: 180
+  vars:
+    ansible_python_interpreter: /usr/bin/python3 
+
+- name: apply authorization policy template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:      
+    state: present
+    src: "/home/{{ username }}/src/profiles/authpolicy_{{ team_name }}_{{ user_name }}.yaml"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: apply rolebinding template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:      
+    state: present
+    src: "/home/{{ username }}/src/profiles/rolebinding_{{ team_name }}_{{ user_name }}.yaml"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

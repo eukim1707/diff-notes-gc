@@ -1,0 +1,77 @@
+- hosts: bastion
+  become: yes
+
+  vars:
+    team_info: "{{ lookup('file', 'team_info.json') }}"
+
+  tasks:
+    - name: create profiles and collaborators
+      block:
+        - debug:
+            var: team_info
+
+        - name: ensure profiles directory exists
+          file:
+            path: "/home/{{ username }}/src/profiles"
+            state: directory
+            mode: g+rw
+            owner: "{{ username }}"
+            group: "{{ username }}"
+
+        - name: wait for kubeflow pods to be running (may encounter delays due to pull rate limit)
+          become: yes
+          become_user: "{{ username }}"
+          shell: "kubectl get pods -n kubeflow -o json"
+          register: kfpods
+          until:
+            - kfpods.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+          retries: 360
+          delay: 10
+
+        # Check to make sure the profile controller pods are ready
+        - name: ensure kubeflow pipelines profile controller pod is running
+          become: yes
+          become_user: "{{ username }}"
+          shell: "kubectl get pods -n kubeflow --selector=app=kubeflow-pipelines-profile-controller -o json"
+          register: profpipe
+          until:
+            - profpipe.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+          retries: 360
+          delay: 10
+
+        - name: ensure profiles deployment pods are running
+          become: yes
+          become_user: "{{ username }}"
+          shell: "kubectl get pods -n kubeflow --selector=service.istio.io/canonical-name=profiles-deployment -o json"
+          register: profcont
+          until:
+            - profcont.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+          retries: 360
+          delay: 10
+
+        - name: initialize empty list for authpolicy principals
+          set_fact:
+            profile_sa_list: []
+
+        - name: create profile per team using team lead email
+          include_tasks: create_profiles.yaml
+          loop: "{{ team_info | json_query('teams') }}"
+
+        - debug:
+            var: profile_sa_list
+
+        - name: template out profile authorization policy file
+          template:
+            src: profile-authpolicy.yaml
+            dest: "/home/{{ username }}/src/profiles/profile-authpolicy.yaml"
+
+        - name: apply authpolicy template
+          become: yes
+          become_user: "{{ username }}"
+          kubernetes.core.k8s:
+            state: present
+            src: "/home/{{ username }}/src/profiles/profile-authpolicy.yaml"
+          vars:
+            ansible_python_interpreter: /usr/bin/python3
+
+      tags: profiles

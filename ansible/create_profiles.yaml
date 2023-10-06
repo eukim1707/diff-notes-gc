@@ -1,0 +1,146 @@
+---
+- name: set fact for item's team name
+  set_fact:
+    team_name: "{{ item|json_query('team') }}"
+
+- debug:
+    var: team_name
+
+- name: set fact for item's lead email
+  set_fact:
+    lead_email: "{{ item|json_query('lead') }}"
+
+- debug:
+    var: lead_email
+
+- name: create principal for authorization policy
+  set_fact:
+    principal: "cluster.local/ns/{{ team_name }}/sa/default-editor"
+
+- name: add profile namespace to principals list
+  set_fact:
+    profile_sa_list: "{{ profile_sa_list + [ principal ] }}"
+
+# check if include_iam_s3 variable was set via ansible-playbook init.yaml --extra-vars include_iam_s3=false
+- name: set default value for option to include IAM and S3 creation tasks
+  set_fact:
+    include_iam_s3: "true"
+  when: include_iam_s3 is undefined
+- debug:
+    var: include_iam_s3
+
+# tasks for creating IAM policies and roles for each profile to access S3 bucket - only run if include_iam_s3=true
+- name: create profile policies and role per team_name
+  include_tasks: create_profile_policy_role.yaml
+  when: include_iam_s3 == true
+
+- name: copy templated profile yaml file to bastion
+  template:
+    src: profile.yaml
+    dest: "/home/{{ username }}/src/profiles/profile_{{ team_name }}.yaml"
+
+- name: copy templated envoyfilter yaml file to bastion
+  template:
+    src: profile-envoyfilter.yaml
+    dest: "/home/{{ username }}/src/profiles/profile-envoyfilter_{{ team_name }}.yaml"
+
+- name: copy templated authorizationpolicy yaml file to bastion
+  template:
+    src: profile-authpolicy-ns.yaml
+    dest: "/home/{{ username }}/src/profiles/profile-authpolicy_{{ team_name }}.yaml"
+
+- name: copy templated poddefault yaml file to bastion
+  template:
+    src: profile-poddefault.yaml
+    dest: "/home/{{ username }}/src/profiles/profile-poddefault_{{ team_name }}.yaml"
+
+- name: apply profile template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:
+    state: present
+    src: "/home/{{ username }}/src/profiles/profile_{{ team_name }}.yaml"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: make sure profile namespace is available
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s_info:
+    kind: Namespace
+    name: "{{ team_name }}"
+    wait: yes
+    wait_sleep: 5
+    wait_timeout: 180
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: apply envoyfilter template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:
+    state: present
+    src: "/home/{{ username }}/src/profiles/profile-envoyfilter_{{ team_name }}.yaml"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: apply authorizationpolicy template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:
+    state: present
+    src: "/home/{{ username }}/src/profiles/profile-authpolicy_{{ team_name }}.yaml"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: apply poddefault template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:
+    state: present
+    src: "/home/{{ username }}/src/profiles/profile-poddefault_{{ team_name }}.yaml"
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: apply aws-secrets template
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: aws-secret
+        namespace: "{{ team_name }}"
+        annotations:
+          serving.kserve.io/s3-endpoint: s3.amazonaws.com
+          serving.kserve.io/s3-usehttps: "1"
+          serving.kserve.io/s3-region: "{{ aws_region }}"
+      type: Opaque
+      data:
+        AWS_ACCESS_KEY_ID:
+        AWS_SECRET_ACCESS_KEY:
+    validate:
+      strict: no
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: patch default-editor service account for profile
+  become: yes
+  become_user: "{{ username }}"
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: default-editor
+        namespace: "{{ team_name }}"
+      secrets:
+        - name: aws-secret
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+- name: create collaborators per team for each member listed
+  include_tasks: create_collaborators.yaml
+  loop: "{{ item | json_query('members')|list }}"

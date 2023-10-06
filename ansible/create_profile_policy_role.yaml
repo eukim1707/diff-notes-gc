@@ -1,0 +1,54 @@
+---
+# - name: Create S3 bucket
+#   amazon.aws.s3_bucket:
+#     name: "{{ cluster_name }}-{{ team_name }}-bucket"
+#     state: present
+#     public_access:
+#       block_public_acls: true
+#       ignore_public_acls: true
+#   vars:
+#     ansible_python_interpreter: /usr/bin/python3
+
+
+# - name: Create IAM role for team profile and attach team policy for S3
+#   community.aws.iam_role:
+#     name: "{{ cluster_name }}-{{ team_name }}-role"
+#     assume_role_policy_document: "{{ lookup('file','trust.json') }}"
+#     # managed_policies:
+#     #   - arn:aws-us-gov:iam::{{ aws_account_id }}:policy/{{ cluster_name }}-{{ team_name }}-s3bucketaccess
+#   register: iam_role
+#   vars:
+#     ansible_python_interpreter: /usr/bin/python3
+
+# - name: Create IAM policy for team profile
+#   community.aws.iam_policy:
+#     state: present
+#     iam_type: 'role'
+#     iam_name: "{{ cluster_name }}-{{ team_name }}-role"
+#     policy_name: "{{ cluster_name }}-{{ team_name }}-s3bucketaccess"
+#     policy_json: |
+#       {
+#         "Version": "2012-10-17",
+#         "Statement": [
+#           {
+#             "Sid": "BucketAccess",
+#             "Effect": "Allow",
+#             "Action": [
+#               "s3:*"
+#             ],
+#             "Resource": [
+#               "arn:aws-us-gov:s3:::{{ cluster_name }}-{{ team_name }}-bucket",
+#               "arn:aws-us-gov:s3:::{{ cluster_name }}-{{ team_name }}-bucket/*"
+#             ]
+#           }
+#         ]
+#       }
+#   vars:
+#     ansible_python_interpreter: /usr/bin/python3
+
+# - debug:
+#     var: iam_role['arn']
+
+- name: Set iam role arn
+  set_fact:
+    s3_role_profile_arn: "arn:aws-us-gov:iam::345088699538:role/dev2-eks-cluster-o-o-role" #{{ iam_role['arn'] }}"

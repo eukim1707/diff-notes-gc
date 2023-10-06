@@ -1,0 +1,47 @@
+apiVersion: v1
+data:
+  OIDC_AUTH_URL: /dex/auth
+  OIDC_PROVIDER: "https://dev2.overwatchplatform.com/dex"
+  OIDC_SCOPES: profile email
+  PORT: '"8080"'
+  #REDIRECT_URL: /login/oidc
+  SKIP_AUTH_URLS: /dex
+  STORE_PATH: /var/lib/authservice/data.db
+  USERID_CLAIM: email
+  USERID_HEADER: kubeflow-userid
+  USERID_PREFIX: ''
+  AUTHSERVICE_URL_PREFIX: /authservice/
+  AFTER_LOGOUT_URL: /
+kind: ConfigMap
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+  labels:
+    app.kubernetes.io/instance: oidc-authservice
+  name: oidc-authservice-parameters
+  namespace: istio-system
+
+# apiVersion: v1
+# data:
+#   OIDC_AUTH_URL: /dex/auth
+#   OIDC_PROVIDER: "https://dev2.overwatchplatform.com/dex"
+#   OIDC_SCOPES: profile email groups
+#   PORT: "8080"
+#   #REDIRECT_URL: /login/oidc
+#   SKIP_AUTH_URI: /dex
+#   STORE_PATH: /var/lib/authservice/data.db
+#   USERID_CLAIM: email
+#   USERID_HEADER: kubeflow-userid
+#   USERID_PREFIX: ""
+#   AFTER_LOGOUT_URL: /
+# kind: ConfigMap
+# metadata:
+#   annotations:
+#     argocd.argoproj.io/compare-options: IgnoreExtraneous
+#   labels:
+#     app.kubernetes.io/instance: oidc-authservice
+#   name: oidc-authservice-parameters
+#   namespace: istio-system
+
+
+

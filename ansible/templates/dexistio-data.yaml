@@ -1,0 +1,52 @@
+apiVersion: v1
+data:
+  config.yaml: |
+    issuer: "https://dev2.overwatchplatform.com/dex"
+    storage:
+      type: kubernetes
+      config:
+        inCluster: true
+    web:
+      http: 0.0.0.0:5556
+    logger:
+      level: "debug"
+      format: text
+    oauth2:
+      skipApprovalScreen: true
+    connectors:
+    - type: microsoft
+      id: deloitte
+      name: Deloitte
+      config:
+        clientID: "9bc51f8a-4984-4e3a-802d-b088ec12a04a"
+        clientSecret: "OHV8Q~h3RvG.pOkBALV~Kn9TvTOT7HtEu1D_2dxs"
+        tenant: deloitte.onmicrosoft.com
+        redirectURI: https://dev2.overwatchplatform.com/dex/callback    
+    enablePasswordDB: true  
+    staticPasswords:
+    - email: user@example.com
+      hash: $2y$12$4K/VkmDd1q1Orb3xAt82zu8gk7Ad6ReFR4LCP9UeYE90NLiN9Df72
+      # https://github.com/dexidp/dex/pull/1601/commits
+      # FIXME: Use hashFromEnv instead
+      username: user
+      userID: "15841185641784"
+    - email: user1@example.com
+      hash: $2y$12$4K/VkmDd1q1Orb3xAt82zu8gk7Ad6ReFR4LCP9UeYE90NLiN9Df72
+      # https://github.com/dexidp/dex/pull/1601/commits
+      # FIXME: Use hashFromEnv instead
+      username: user
+      userID: "15841185641782"  
+    staticClients:
+    - idEnv: OIDC_CLIENT_ID
+      redirectURIs: ["/login/oidc"]
+      name: 'Dex Login Application'
+      secretEnv: OIDC_CLIENT_SECRET
+kind: ConfigMap
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+  labels:
+    app.kubernetes.io/instance: dex-istio
+  name: dex
+  namespace: auth
+
