@@ -10,7 +10,7 @@
 
 ## changes untracked in this repo:
 1. global VSCode search and replace done to change AWS Region to us-gov-west-1
-   1. search: "arn:aws" | replace: "arn:aws-us-gov-west-1"
+   1. search: "arn:aws" | replace: "arn:aws-us-gov"
    2. change region to “us-gov-west-1” in terraform-infrastructure/terraform.tf and terraform-infrastructure/variables.tf
 2. [profile_onboarding_old.yaml](ansible/profile_onboarding_old.yaml) replaced profile_onboarding.yaml in init.yaml
 3. venv folder added to AICOE-Platform-Infrastructure root dir
